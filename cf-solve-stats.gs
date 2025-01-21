@@ -1,4 +1,4 @@
-// global sheet variable to access the active sheet
+// Global sheet variable to access active sheet
 const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
 // function to fetch info using codeforces api
@@ -65,7 +65,7 @@ function getSheetUsernames() {
 }
 
 
-// function to retrieve problem set from sheet
+// function to retrieve problem urls from sheet
 function getProblemUrls() {
   // Sheet Problems are starting from B6, which means col 2 and row 6
   const startRow = 6;
@@ -88,16 +88,20 @@ function getProblemUrls() {
 
 // function to fill cell with corresponding data
 function fillCell(results, row, col) {
+  Logger.log("Got row: " + row + " Got column: " + col);
   let currentCol = col;
   for(const result of results) {
     const cell = sheet.getRange(row, currentCol);
     cell.setValue(result);
     if(result === "AC")
       cell.setBackground("#00ff00");
-    if(result === "?")
+    else if(result === "?")
       cell.setBackground("#fce5cd");
+    else 
+      cell.setBackground("#f1faee");
     
     currentCol++;
+    SpreadsheetApp.flush();
   }
   Logger.log("Wrote results " + results + " successfully!");
   // Logger.log("Successfully set values for row " + row + " and col " + col);
@@ -105,7 +109,9 @@ function fillCell(results, row, col) {
 
 // function to process the links and retrieve user's status
 function dataProcess(urls, usernames) {
+  // usernames starting from column 3
   let row = 6, col = 3;
+
   for(const url of urls) {
     // checking link validity using regex
     Logger.log("Checking for url: " + url);
@@ -121,23 +127,67 @@ function dataProcess(urls, usernames) {
       for(const username of usernames) {
         const result = didHeSolveIt(username, contestId, problemIndex);
         results.push(result);
-      }
+      }0.
       Logger.log("Got results: " + results);
       fillCell(results, row, col);
       
     }
     else {
-      Logger.log("Invalid Link"); // ignores the link if it's invalid
+      Logger.log("Invalid Link");
       continue;
     }
-    row++; // going through rows, column is fixed for my sheet
+    row++;
   }
   
 }
 
-// Main function to drive all other functions
+// function showAlert() {
+//   const ui = SpreadsheetApp.getUi(); // Get the user interface
+//   ui.alert("Hey there! The sheet updates every 4hrs! So be patient if you don't see changes yet."); // Show update dialogue
+// }
+
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("Tracker").addItem("Run", "main").addToUi();
+}
+
+// problems background shade
+function probShade() {
+  const probUrls = getProblemUrls();
+  var lastIndexOfSlash;
+  var lastSegmentOfUrl;
+  const startRow = 6;
+  const startCol = 2;
+  let currentRow = startRow;
+  
+  for(const url of probUrls) {
+    const cell = sheet.getRange(currentRow, startCol);
+    lastIndexOfSlash = url.lastIndexOf('/');
+    lastSegmentOfUrl = url.substring(lastIndexOfSlash + 1);
+    if(lastSegmentOfUrl === 'A') {
+      Logger.log("A problem");
+      cell.setBackground("#DCEEF3")
+    }
+    else if(lastSegmentOfUrl === 'B') {
+      cell.setBackground("#C2E2EA")
+    }
+    else if(lastSegmentOfUrl === 'C' || lastSegmentOfUrl === 'C1' || lastSegmentOfUrl === 'C2') {
+      Logger.log("A problem");
+      cell.setBackground("#A7D5E1")
+    }
+    else if(lastSegmentOfUrl === 'D') {
+      cell.setBackground("#8DC8D8")
+    }
+    else {
+      cell.setBackground("#72BBCE")
+    }
+    currentRow++;
+  }
+}
+
 function main() {
   const usernames = getSheetUsernames();
   const urls = getProblemUrls();
+  probShade();
   dataProcess(urls, usernames);
 }
